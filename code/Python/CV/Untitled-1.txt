@@ -1,0 +1,102 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+INPUT_SIZE=784
+HIDE_LAYER_SIZE=500
+OUTPUT_SIZE=10
+ 
+BATCH_SIZE=100
+BASE_LEARN_RATE=0.8
+LEARN_DECAY_RATE=0.99
+MOVINGAVERAGE_DECAY=0.99
+ 
+REGULARIZATION_RATE=0.0001
+TRAIN_ROUNDS=30000
+ 
+def reference(input_data,avg_class,weight1,bias1,weight2,bias2):
+    #1*784 784*500
+    if(avg_class==None):
+        layer1=tf.nn.relu(tf.matmul(input_data,weight1)+bias1)
+        #因为后续有softmax处理，不需要激活函数
+        return tf.matmul(layer1,weight2)+bias2
+    else:
+        #滑动平均模型
+        layer1=tf.nn.relu(tf.matmul(input_data,avg_class.average(weight1))
+                          +avg_class.average(bias1))
+        return tf.matmul(layer1,avg_class.average(weight2))+avg_class.average(bias2)
+ 
+def train(mnist):
+    x=tf.placeholder(tf.float32,[None,INPUT_SIZE])
+    y_=tf.placeholder(tf.float32,[None,OUTPUT_SIZE])
+ 
+    weight_1=tf.Variable(tf.truncated_normal([INPUT_SIZE,HIDE_LAYER_SIZE],stddev=0.1))
+    bias_1=tf.Variable(tf.constant(0.1,tf.float32))
+ 
+    weight_2=tf.Variable(tf.truncated_normal([HIDE_LAYER_SIZE,OUTPUT_SIZE],stddev=0.1))
+    bias_2=tf.Variable(tf.constant(0.1,tf.float32))
+ 
+    #非滑动平均模型
+    y=reference(x,None,weight_1,bias_1,weight_2,bias_2)
+ 
+    #滑动平均模型
+    globel_step=tf.Variable(0,False)
+    average_class=tf.train.ExponentialMovingAverage(MOVINGAVERAGE_DECAY,globel_step)
+    average_op=average_class.apply(tf.trainable_variables())
+ 
+    average_y=reference(x,average_class,weight_1,bias_1,weight_2,bias_2)
+ 
+    #cross entropy
+    cross_entropy_y=tf.nn.sparse_softmax_cross_entropy_with_logits\
+        (labels=tf.arg_max(y_,1),logits=y)
+    cross_entropy_y_mean=tf.reduce_mean(cross_entropy_y)
+    
+    regularization=tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)
+ 
+    #定义滑动平均模型的包含L2正则化损失函数的损失函数
+    loss=cross_entropy_y_mean+regularization(weight_1)+regularization(weight_2)
+ 
+    #定义指数下降的学习率
+    learn_rate=tf.train.exponential_decay(BASE_LEARN_RATE,globel_step,
+                                          mnist.train.num_examples/BATCH_SIZE,
+                                         LEARN_DECAY_RATE)
+ 
+    optimizer=tf.train.GradientDescentOptimizer(learning_rate=learn_rate).minimize\
+    (loss,globel_step)
+ 
+    #定义训练操作
+    train_op=tf.group(optimizer,average_op)
+    #正确率
+    model_result=tf.equal(tf.arg_max(average_y,1),tf.arg_max(y_,1))
+    accurity_model=tf.reduce_mean(tf.cast(model_result,tf.float32))
+ 
+    with tf.Session() as sess:
+        tf.initialize_all_variables().run()
+ 
+        #声明验证集
+        validation_x = mnist.validation.images
+        validation_y = mnist.validation.labels
+        validation={x:validation_x,y_:validation_y}
+        #声明测试集
+        test={x:mnist.test.images,y_:mnist.test.labels}
+        for i in range(TRAIN_ROUNDS):
+            #每1000轮打印结果
+            if i%1000==0:
+                accurity_value=sess.run(accurity_model,feed_dict=validation)
+                print("step is %d,the accurity is %f\n"%(i,accurity_value))
+        #训练
+            xt,yt=mnist.train.next_batch(BATCH_SIZE)
+            sess.run(train_op,feed_dict={x:xt,y_:yt})
+ 
+        #打印结果
+        accurity_value=sess.run(accurity_model,test)
+        print("train %d step,the accurity is %f"%(TRAIN_ROUNDS,accurity_value))
+ 
+def main(argv=None):
+#建议去网站写好了数据集放到一个目录下使用，这个函数已经被弃用
+    mnist=input_data.read_data_sets("${数据集所在的目录}",one_hot=True,source_url='http://yann.lecun.com/exdb/mnist/')
+    train(mnist=mnist)
+
+--------------------- 
+作者：lj_tang_tf 
+来源：CSDN 
+原文：https://blog.csdn.net/qq_39742013/article/details/83150054 
+版权声明：本文为博主原创文章，转载请附上博文链接！
