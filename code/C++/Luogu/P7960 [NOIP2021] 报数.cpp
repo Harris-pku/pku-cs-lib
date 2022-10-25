@@ -1,7 +1,7 @@
 /*  Coder: Harris
     Time: 2022.10.25
-    Website: https://www.luogu.com.cn/problem/P5720
-    Algorithm: simulation
+    Website: https://www.luogu.com.cn/problem/P7960
+    Algorithm: math
 */
 #include <cstdio>
 #include <iostream>
