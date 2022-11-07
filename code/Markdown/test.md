@@ -21,7 +21,9 @@ $$
 
 ---
 
-<img src="D:\Windows\Windows\Desktop\听课笔记\英语课\美国重要历史文献选读\Lecture 05\exercise5-1.png" alt="exercise5-1" style="zoom:33%;" />
+$$
+\leq \geq \neq \times \dots \cdots \vdots \cdot \int \ddots
+$$
 
 **粗体**
 
@@ -33,16 +35,3 @@ $$
 
 [^run]:我是脚注
 
-1. 
-
-2. 3
-
-3. 4
-
-4. 第一项：
-
-   ​    1.
-
-   ​    2.
-
-- 
